@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Garagem Inteligente</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Estilos (Combinados e Refinados) */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; line-height: 1.6; padding: 15px; background-color: #f8f9fa; color: #343a40; }
+        #container { max-width: 1000px; margin: 20px auto; background: #fff; border: 1px solid #dee2e6; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius: 8px; }
+        h1, h2, h3, h4 { color: #212529; margin-bottom: 0.75em;}
+        h1 { text-align: center; margin-bottom: 1.2em; color: #007bff; font-weight: 600;}
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 0.4em; margin-top: 0; font-size: 1.6em;}
+        h3 { font-size: 1.3em; color: #495057; }
+        h4 { font-size: 1.1em; color: #6c757d; margin-bottom: 0.5em; }
+
+        #menu-veiculos { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e9ecef; text-align: center; }
+        #menu-veiculos button { margin: 0 8px;}
+
+        .veiculo-container { display: none; border: 1px solid #e0e0e0; padding: 25px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.05);}
+        .veiculo-container.ativo { display: grid; grid-template-columns: 200px 1fr; /* Coluna fixa para imagem/info, resto flexível */ gap: 30px; }
+         @media (max-width: 800px) { .veiculo-container.ativo { grid-template-columns: 1fr; } } /* Uma coluna em telas menores */
+
+        .coluna-imagem-info { display: flex; flex-direction: column; align-items: center; }
+        .coluna-acoes-manutencao { display: flex; flex-direction: column; }
+
+        /* Seções Gerais */
+        .edicao-veiculo, .agendamento-section, .historico-section, #agendamentos-futuros, #notificacoes-area {
+            margin-top: 25px; border: 1px solid #ced4da; padding: 20px; border-radius: 6px; background-color: #f8f9fa;
+        }
+        .edicao-veiculo h2, .agendamento-section h4, .historico-section h4, #agendamentos-futuros h3 { margin-top: 0; }
+
+        #notificacoes-area { background-color: #fff3cd; border-color: #ffeeba; color: #856404; display: none; }
+        #notificacoes-area ul { list-style: none; padding: 0; margin: 0;}
+        #notificacoes-area li { padding: 6px 0; border-bottom: 1px dashed #ffeeba; font-size: 0.95em;}
+        #notificacoes-area li:last-child { border-bottom: none; }
+
+        /* Formulários */
+        label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 0.9em; color: #495057;}
+        input[type="text"], input[type="number"], input[type="file"], input[type="date"], input[type="time"], textarea, select {
+            width: 100%; padding: 10px 12px; margin-bottom: 15px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 1em; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        input:focus, textarea:focus { border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        textarea { resize: vertical; min-height: 80px; }
+
+        /* Botões */
+        button {
+            padding: 10px 20px; margin: 5px 5px 5px 0; border: none; border-radius: 5px; background-color: #007bff; /* Azul primário */ color: white; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; font-size: 1em; font-weight: 500;
+        }
+        button:hover { background-color: #0056b3; }
+        button:active { transform: scale(0.97); }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+
+        /* Botões Específicos */
+        button[data-acao="desligar"] { background-color: #dc3545; } /* Vermelho */
+        button[data-acao="desligar"]:hover { background-color: #c82333; }
+        button[data-acao="ativarTurbo"] { background-color: #ffc107; color: #212529;} /* Amarelo */
+        button[data-acao="ativarTurbo"]:hover { background-color: #e0a800; }
+        button[data-acao="carregar"] { background-color: #17a2b8; } /* Ciano */
+        button[data-acao="carregar"]:hover { background-color: #117a8b;}
+        #salvar-veiculo { background-color: #28a745;} /* Verde */
+        #salvar-veiculo:hover { background-color: #1e7e34;}
+        .agendar-manutencao-btn { background-color: #6f42c1; } /* Roxo */
+        .agendar-manutencao-btn:hover { background-color: #5a379b; }
+        .btn-limpar-historico { /* Botão Limpar */
+            background-color: #fd7e14; /* Laranja */
+            font-size: 0.8em; padding: 4px 8px;
+            float: right; margin-top: -2px; /* Ajuste para alinhar com H4 */
+        }
+        .btn-limpar-historico:hover { background-color: #e66a0a; }
+
+        /* Layout e Componentes */
+        .acoes-veiculo { margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; }
+        .barra-aceleracao { width: 100%; height: 25px; background-color: #e9ecef; border: 1px solid #ced4da; margin-top: 15px; border-radius: 5px; overflow: hidden; }
+        .barra-progresso { height: 100%; width: 0; background-color: #28a745; transition: width 0.3s ease-out; }
+        .informacoes-veiculo { width: 100%; margin-bottom: 20px; background-color: #f1f3f5; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; text-align: center; }
+        .informacoes-veiculo p { margin: 8px 0; font-size: 1em;}
+        .status-ligado { color: #28a745; font-weight: bold; }
+        .status-desligado { color: #dc3545; font-weight: bold; }
+        .velocimetro { width: 120px; height: 60px; border: 3px solid #adb5bd; border-bottom: none; border-top-left-radius: 60px; border-top-right-radius: 60px; position: relative; overflow: hidden; margin: 15px auto 10px auto; background: #fff;}
+        .ponteiro { position: absolute; bottom: 0; left: 50%; width: 3px; height: 55px; background-color: #dc3545; transform-origin: bottom center; transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); transform: translateX(-50%) rotate(-90deg); border-radius: 2px 2px 0 0; }
+
+        /* Imagens */
+        #carro-quadrado img, #carro-esportivo-quadrado img, #caminhao-quadrado img {
+            max-width: 100%; height: auto; display: block; border-radius: 4px; margin-bottom: 15px; border: 1px solid #eee;
+            max-height: 160px; object-fit: contain;
+        }
+
+         /* Histórico e Agendamentos */
+        .historico-section ul, #agendamentos-futuros-lista ul { list-style: none; padding-left: 0; margin-top: 10px; /* Espaço após botão/título */ }
+        .historico-section li, #agendamentos-futuros-lista li { background-color: #e9ecef; border: 1px solid #dee2e6; padding: 10px 12px; margin-bottom: 8px; border-radius: 4px; font-size: 0.9em; }
+        #agendamentos-futuros { background-color: #d1ecf1; border-color: #bee5eb; }
+        #agendamentos-futuros h3 { color: #0c5460; }
+        #agendamentos-futuros li { background-color: #fff; border-color: #bee5eb;}
+
+        /* Div interna para lista de histórico (para clear:both funcionar bem com float) */
+        div[id^="lista-historico-"] {
+            clear: both; /* Garante que a lista venha após o botão flutuante */
+        }
+
+         /* Input de carga caminhão */
+        .carga-container { display: flex; align-items: center; margin-bottom: 15px; gap: 10px;}
+        #carga-scania { flex-grow: 1; margin-bottom: 0; /* Remove margem inferior padrão */}
+        label[for="carga-scania"] { margin-bottom: 0; flex-shrink: 0;}
+        .carga-container button { flex-shrink: 0;}
+    </style>
+</head>
+<body>
+<div id="container">
+
+    <h1><span role="img" aria-label="Garagem">🏢</span> Garagem Inteligente</h1>
+
+    <!-- Área para Notificações -->
+    <div id="notificacoes-area"></div>
+
+    <!-- Menu de Seleção de Veículos -->
+    <div id="menu-veiculos">
+        <button data-veiculo="carro-base">Pagani Zonda R</button>
+        <button data-veiculo="carro-esportivo">Ferrari F40</button>
+        <button data-veiculo="caminhao">Caminhão Scania</button>
+    </div>
+
+    <!-- Edição de Veículos (Geral) -->
+    <div id="edicao-veiculo" class="edicao-veiculo">
+        <h2><span role="img" aria-label="Lápis">✏️</span> Editar Veículo Selecionado</h2>
+        <label for="modelo">Modelo:</label>
+        <input type="text" id="modelo" name="modelo">
+
+        <label for="cor">Cor:</label>
+        <input type="text" id="cor" name="cor">
+
+        <label for="imagem">Alterar Imagem:</label>
+        <input type="file" id="imagem" name="imagem" accept="image/*">
+
+        <button id="salvar-veiculo">Salvar Alterações</button>
+    </div>
+
+     <!-- Seção Global de Agendamentos Futuros -->
+    <div id="agendamentos-futuros">
+        <h3><span role="img" aria-label="Calendário">📅</span> Próximos Agendamentos</h3>
+        <div id="agendamentos-futuros-lista">
+            <p>Carregando agendamentos...</p>
+        </div>
+    </div>
+
+
+    <!-- === Carro Base (Pagani Zonda R) === -->
+    <div id="carro-base" class="veiculo-container">
+        <!-- Coluna 1: Imagem e Informações -->
+        <div class="coluna-imagem-info">
+             <h2 id="carro-base-titulo">Carro Base</h2>
+             <div id="carro-quadrado">
+                 <img id="carro-imagem" src="pagani R.jpg" alt="Imagem do Carro">
+            </div>
+            <div class="informacoes-veiculo">
+                <p>Status: <span id="status" class="status-desligado">Desligado</span></p>
+                <p>Velocidade: <span id="velocidade">0</span> km/h</p>
+                <div class="velocimetro"><div id="ponteiro-carro-base" class="ponteiro"></div></div>
+                <div class="barra-aceleracao"><div id="barra-progresso-carro-base" class="barra-progresso"></div></div>
+            </div>
+        </div>
+
+        <!-- Coluna 2: Ações e Manutenção -->
+        <div class="coluna-acoes-manutencao">
+            <div class="acoes-veiculo">
+                <h3><span role="img" aria-label="Volante">🎮</span> Ações</h3>
+                <button data-acao="ligar" data-veiculo="meuCarro">Ligar</button>
+                <button data-acao="acelerar" data-veiculo="meuCarro">Acelerar</button>
+                <button data-acao="frear" data-veiculo="meuCarro">Frear</button>
+                <button data-acao="buzinar" data-veiculo="meuCarro">Buzinar</button>
+                <button data-acao="desligar" data-veiculo="meuCarro">Desligar</button>
+            </div>
+
+            <div class="agendamento-section">
+                 <h4><span role="img" aria-label="Ferramenta">🔧</span> Agendar Manutenção</h4>
+                 <form class="form-agendamento" data-veiculo="meuCarro">
+                     <label for="agendamento-data-meuCarro">Data:</label>
+                     <input type="date" id="agendamento-data-meuCarro" class="agendamento-data" required>
+                     <label for="agendamento-hora-meuCarro">Hora:</label>
+                     <input type="time" id="agendamento-hora-meuCarro" class="agendamento-hora">
+                     <label for="agendamento-tipo-meuCarro">Tipo de Serviço:</label>
+                     <input type="text" id="agendamento-tipo-meuCarro" class="agendamento-tipo" required placeholder="Ex: Troca de óleo">
+                     <label for="agendamento-custo-meuCarro">Custo Estimado (R$):</label>
+                     <input type="number" id="agendamento-custo-meuCarro" class="agendamento-custo" step="0.01" min="0" placeholder="Opcional">
+                     <label for="agendamento-obs-meuCarro">Observações:</label>
+                     <textarea id="agendamento-obs-meuCarro" class="agendamento-obs" placeholder="Opcional"></textarea>
+                     <button type="submit" class="agendar-manutencao-btn">Agendar</button>
+                 </form>
+            </div>
+            <div class="historico-section" id="historico-meuCarro">
+                 <h4>Histórico de Manutenções</h4>
+                 <button class="btn-limpar-historico" data-veiculo="meuCarro" title="Apaga todo o histórico deste veículo">
+                     <span role="img" aria-label="Lixeira">🗑️</span> Limpar
+                 </button>
+                 <div id="lista-historico-meuCarro"> <!-- Div para lista -->
+                    <p>Carregando histórico...</p>
+                 </div>
+            </div>
+        </div>
+    </div> <!-- Fim Carro Base -->
+
+    <!-- === Carro Esportivo (Ferrari F40) === -->
+    <div id="carro-esportivo" class="veiculo-container">
+         <!-- Coluna 1: Imagem e Informações -->
+         <div class="coluna-imagem-info">
+             <h2 id="carro-esportivo-titulo">Carro Esportivo</h2>
+              <div id="carro-esportivo-quadrado">
+                 <img id="carro-esportivo-imagem" src="fcr.webp" alt="Imagem do Carro Esportivo">
+             </div>
+             <div class="informacoes-veiculo">
+                 <p>Status: <span id="status-esportivo" class="status-desligado">Desligado</span></p>
+                 <p>Velocidade: <span id="velocidade-esportivo">0</span> km/h</p>
+                 <p id="turbo-status">Turbo: Desativado</p>
+                  <div class="velocimetro"><div id="ponteiro-carro-esportivo" class="ponteiro"></div></div>
+                  <div class="barra-aceleracao"><div id="barra-progresso-carro-esportivo" class="barra-progresso"></div></div>
+             </div>
+         </div>
+
+         <!-- Coluna 2: Ações e Manutenção -->
+         <div class="coluna-acoes-manutencao">
+             <div class="acoes-veiculo">
+                 <h3><span role="img" aria-label="Fogo">🔥</span> Ações</h3>
+                 <button data-acao="ligar" data-veiculo="ferrari">Ligar</button>
+                 <button data-acao="acelerar" data-veiculo="ferrari">Acelerar</button>
+                 <button data-acao="frear" data-veiculo="ferrari">Frear</button>
+                 <button data-acao="ativarTurbo" data-veiculo="ferrari">Turbo ON/OFF</button>
+                 <button data-acao="buzinar" data-veiculo="ferrari">Buzinar</button>
+                 <button data-acao="desligar" data-veiculo="ferrari">Desligar</button>
+             </div>
+
+             <div class="agendamento-section">
+                  <h4><span role="img" aria-label="Ferramenta">🔧</span> Agendar Manutenção</h4>
+                  <form class="form-agendamento" data-veiculo="ferrari">
+                      <label for="agendamento-data-ferrari">Data:</label>
+                      <input type="date" id="agendamento-data-ferrari" class="agendamento-data" required>
+                      <label for="agendamento-hora-ferrari">Hora:</label>
+                      <input type="time" id="agendamento-hora-ferrari" class="agendamento-hora">
+                      <label for="agendamento-tipo-ferrari">Tipo de Serviço:</label>
+                      <input type="text" id="agendamento-tipo-ferrari" class="agendamento-tipo" required placeholder="Ex: Revisão de freios">
+                      <label for="agendamento-custo-ferrari">Custo Estimado (R$):</label>
+                      <input type="number" id="agendamento-custo-ferrari" class="agendamento-custo" step="0.01" min="0" placeholder="Opcional">
+                      <label for="agendamento-obs-ferrari">Observações:</label>
+                      <textarea id="agendamento-obs-ferrari" class="agendamento-obs" placeholder="Opcional"></textarea>
+                      <button type="submit" class="agendar-manutencao-btn">Agendar</button>
+                  </form>
+             </div>
+             <div class="historico-section" id="historico-ferrari">
+                  <h4>Histórico de Manutenções</h4>
+                  <button class="btn-limpar-historico" data-veiculo="ferrari" title="Apaga todo o histórico deste veículo">
+                      <span role="img" aria-label="Lixeira">🗑️</span> Limpar
+                  </button>
+                  <div id="lista-historico-ferrari"> <!-- Div para lista -->
+                     <p>Carregando histórico...</p>
+                  </div>
+             </div>
+         </div>
+    </div> <!-- Fim Carro Esportivo -->
+
+    <!-- === Caminhão (Scania R450) === -->
+    <div id="caminhao" class="veiculo-container">
+         <!-- Coluna 1: Imagem e Informações -->
+         <div class="coluna-imagem-info">
+             <h2 id="caminhao-titulo">Caminhão</h2>
+             <div id="caminhao-quadrado">
+                 <img id="caminhao-imagem" src="Scania-30-G.webp" alt="Imagem do Caminhão">
+             </div>
+             <div class="informacoes-veiculo">
+                 <p>Status: <span id="status-caminhao" class="status-desligado">Desligado</span></p>
+                 <p>Velocidade: <span id="velocidade-caminhao">0</span> km/h</p>
+                 <p id="carga-status">Carga: 0/10000 kg</p>
+                 <div class="velocimetro"><div id="ponteiro-caminhao" class="ponteiro"></div></div>
+                 <div class="barra-aceleracao"><div id="barra-progresso-caminhao" class="barra-progresso"></div></div>
+             </div>
+         </div>
+
+         <!-- Coluna 2: Ações e Manutenção -->
+         <div class="coluna-acoes-manutencao">
+             <div class="acoes-veiculo">
+                 <h3><span role="img" aria-label="Caixa">📦</span> Ações</h3>
+                  <div class="carga-container">
+                      <label for="carga-scania">Carga (kg):</label>
+                      <input type="number" id="carga-scania" min="1" placeholder="Peso">
+                      <button data-acao="carregar" data-veiculo="scania">Carregar</button>
+                  </div>
+                 <button data-acao="ligar" data-veiculo="scania">Ligar</button>
+                 <button data-acao="acelerar" data-veiculo="scania">Acelerar</button>
+                 <button data-acao="frear" data-veiculo="scania">Frear</button>
+                 <button data-acao="buzinar" data-veiculo="scania">Buzinar</button>
+                 <button data-acao="desligar" data-veiculo="scania">Desligar</button>
+             </div>
+
+             <div class="agendamento-section">
+                  <h4><span role="img" aria-label="Ferramenta">🔧</span> Agendar Manutenção</h4>
+                  <form class="form-agendamento" data-veiculo="scania">
+                      <label for="agendamento-data-scania">Data:</label>
+                      <input type="date" id="agendamento-data-scania" class="agendamento-data" required>
+                       <label for="agendamento-hora-scania">Hora:</label>
+                      <input type="time" id="agendamento-hora-scania" class="agendamento-hora">
+                      <label for="agendamento-tipo-scania">Tipo de Serviço:</label>
+                      <input type="text" id="agendamento-tipo-scania" class="agendamento-tipo" required placeholder="Ex: Alinhamento">
+                      <label for="agendamento-custo-scania">Custo Estimado (R$):</label>
+                      <input type="number" id="agendamento-custo-scania" class="agendamento-custo" step="0.01" min="0" placeholder="Opcional">
+                      <label for="agendamento-obs-scania">Observações:</label>
+                      <textarea id="agendamento-obs-scania" class="agendamento-obs" placeholder="Opcional"></textarea>
+                      <button type="submit" class="agendar-manutencao-btn">Agendar</button>
+                  </form>
+             </div>
+             <div class="historico-section" id="historico-scania">
+                  <h4>Histórico de Manutenções</h4>
+                   <button class="btn-limpar-historico" data-veiculo="scania" title="Apaga todo o histórico deste veículo">
+                      <span role="img" aria-label="Lixeira">🗑️</span> Limpar
+                  </button>
+                  <div id="lista-historico-scania"> <!-- Div para lista -->
+                     <p>Carregando histórico...</p>
+                  </div>
+             </div>
+         </div>
+    </div> <!-- Fim Caminhão -->
+
+</div> <!-- Fim #container -->
+
+<!-- Áudios -->
+<audio id="som-ligar" src="som_carro_ligando.mp3" preload="auto"></audio>
+<audio id="som-buzinar" src="buzina.mp3" preload="auto"></audio>
+<audio id="som-acelerar" src="aceleracao.mp3" preload="auto"></audio>
+<audio id="som-frear" src="frear.mp3" preload="auto"></audio>
+<audio id="som-desligar" src="desligar.mp3" preload="auto"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>
